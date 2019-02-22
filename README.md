@@ -26,10 +26,10 @@ The boxes are configured as follows:
 * an `ezpub` user with password `ezpub` and passwordless `sudo`
 * an entry for the vagrant insecure key in `~/.ssh/authorized_keys` for both users
 * `apache` listening on port `80` and `443`
-* `mysql` listening on port `3306` and root password `root`
+* `mysql` listening on port `3306` and with `root` password `root`
 * `php-xdebug` installed and available on port `9000` on the PHP 7 boxes
 * `varnish` listening on port `8080`
-* `nginx``` installed but not listening
+* `nginx` installed but not listening
 * a local `dev.crt` and `dev.key` in `/etc/ssl`
 * `100G` VirtualBox primary disk (useful on larger projects -- most publicly available boxes have `40G` disks)
 
@@ -76,7 +76,8 @@ The CentOS boxes include the following additional repos:
  * [epel](https://fedoraproject.org/wiki/EPEL)
  * [remi](https://rpms.remirepo.net/)
 
-The apache daemon's umask is set to `0002`, server users belong to the apache group, and apache belongs to server users' groups.
+The apache daemon's umask is set to `0002`, server users belong to the apache group, and the apache daemon belongs to 
+the server users' groups.
  
 ## Customization
 ### Packer
@@ -112,8 +113,10 @@ of each script:
 (eg. `41`, `60lts`).
 
 `server_users_local|stage|prod` should include the list of users, besides `root`, who should exist on a given 
-builder (currently, only the `local` builder is configured). The user password is the same as the username. On the
-```local``` builder, all user's will also have the [vagrant insecure key](https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub) added to their ```~/.ssh/authorized_keys``` file.
+builder (currently, only the `local` builder is configured). The default user password is the same as the username. On 
+the ```local``` builder, all users will also have the 
+[vagrant insecure key](https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub) added to their 
+```~/.ssh/authorized_keys``` file.
 
 The following variables are passed from packer to ansible:
 * `vars_file_name` (value is derived from the `variables` section's `image_name`.yml)
@@ -129,14 +132,15 @@ string ingested by ansible):
 ```
 
 ### Ansible
-In ansible, `ansible/host_vars/common.yml` stores all shared configuration and the platform-specific YAML files in 
-`ansible/host_vars` include overrides.
+`ansible/host_vars/common.yml` stores all shared configuration variables; platform platform-specific YAML files in 
+`ansible/host_vars` are used for overrides.
 
-For example, to add a package that should only be downloaded on `CentOS7.6.1810`, simply add an entry
-to the `ansible/host_vars/centos7.6.1810.yml` file's `platform_specific_packages` list.
+For example, to add a package that should only be downloaded on `CentOS7.6.1810`, simply add an entry to the 
+`ansible/host_vars/centos7.6.1810.yml` file's `platform_specific_packages` list.
 
-There's only a single playbook, `ansible/main.yml`, for all builds. Within this file, you can specify that tasks be run
-based on variable conditions:
+There's only a single playbook, `ansible/main.yml`, which is used for all builds.
+
+Within `main.yml` you can selectively run tasks based on variable conditions:
 ```
 - name: add the Vagrant insecure key to each user's ~/.ssh/authorized_keys file when building a local box
   get_url:
@@ -147,3 +151,15 @@ based on variable conditions:
   with_items: "{{ server_users }}"
   when: packer_build_name == "local"
 ```
+
+The same is true for roles:
+```
+- role: geerlingguy.nfs
+  when: packer_build_name == "local"
+```
+
+Almost all roles are from [Ansible Galaxy](https://galaxy.ansible.com/) and specified in the `ansible/requirements.yml` 
+file.
+
+Sometimes, it is necessary to modify Ansible Galaxy roles. In such cases, the roles are not added to 
+`ansible/requirements.yml` but are included in `ansible/roles` instead.
