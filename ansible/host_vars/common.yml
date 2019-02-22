@@ -1,0 +1,193 @@
+# Apache settings ######################################################################################################
+apache_create_vhosts: true
+apache_listen_ip: "*"
+apache_packages_state: latest
+apache_remove_default_vhost: true
+apache_vhosts:
+  - servername: "www.dev.local"
+    serveralias: "dev.local"
+    documentroot: "{{ server_document_root }}"
+    extra_parameters: |
+      RewriteCond %{HTTP_HOST} !^www\. [NC]
+      RewriteRule ^(.*)$ http://www.%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+apache_vhosts_ssl:
+  - servername: "www.dev.local"
+    serveralias: "dev.local"
+    documentroot: "{{ server_document_root }}"
+    certificate_file: "/etc/ssl/dev.crt"
+    certificate_key_file: "/etc/ssl/dev.key"
+    extra_parameters: |
+      RewriteCond %{HTTP_HOST} !^www\. [NC]
+      RewriteRule ^(.*)$ http://www.%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# MySQL settings #######################################################################################################
+mysql_user_home: /root
+mysql_user_name: root
+mysql_user_password: root
+mysql_root_home: /root
+mysql_root_username: root
+mysql_root_password: root
+mysql_user_password_update: yes
+overwrite_global_mycnf: yes
+
+# NFS settings #########################################################################################################
+nfs_exports:
+  - "# *               - anyone on the network can access this share"
+  - "# all_squash      - all network access to the shared folder will be considered as having come from anonguid and anongid"
+  - "# anonuid         - set to {{ apache_group_id }} the {{ apache_group }} user"
+  - "# anongid         - set to {{ apache_group_id }} the {{ apache_group }} group"
+  - "# no_root_squash"
+  - "{{ server_document_root }}    *(rw,sync,insecure,nohide,no_subtree_check,fsid=0,crossmnt,all_squash,anonuid={{ apache_group_id }},anongid={{ apache_group_id }})"
+
+# nginx settings #########################################################################################################
+nginx_remove_default_vhost: true
+
+# NodeJS settings ######################################################################################################
+npm_config_prefix: "/usr"
+nodejs_install_npm_user: root
+nodejs_npm_global_packages:
+  - diff-so-fancy
+  - node-sass
+  - uglifycss
+  - uglify-js
+
+# PHP settings #########################################################################################################
+php_date_timezone: "{{ server_timezone }}"
+php_disable_functions:
+  - pcntl_alarm
+  - pcntl_fork
+  - pcntl_waitpid
+  - pcntl_wait
+  - pcntl_wifexited
+  - pcntl_wifstopped
+  - pcntl_wifsignaled
+  - pcntl_wexitstatus
+  - pcntl_wtermsig
+  - pcntl_wstopsig
+  - pcntl_signal
+  - pcntl_signal_dispatch
+  - pcntl_get_last_error
+  - pcntl_strerror
+  - pcntl_sigprocmask
+  - pcntl_sigwaitinfo
+  - pcntl_sigtimedwait
+  - pcntl_exec
+  - pcntl_getpriority
+  - pcntl_setpriority
+php_html_errors: "False"
+php_install_recommends: yes
+php_memcached_package: php-memcached
+php_memory_limit: "512M"
+php_mysql_package: php-mysql
+php_opcache_load_comments: "1"
+php_opcache_save_comments: "1"
+php_packages:
+  - php
+  - php-apcu
+  - php-cli
+  - php-common
+  - php-curl
+  - php-gd
+  - php-intl
+  - php-json
+  - php-mbstring
+  - php-opcache
+  - php-pear
+  - php-pspell
+  - php-soap
+  - php-readline
+  - php-xml
+  - php-xsl
+php_post_max_size: "50M"
+php_session_gc_maxlifetime: 2592000
+php_session_gc_probability: 1
+php_upload_max_filesize: "50M"
+php_variables_order: "EGPCS"
+php_version: "{{ server_php_version }}"
+php_xdebug_idekey: xdebug.ide
+php_xdebug_remote_autostart: "true"
+php_xdebug_remote_connect_back: "true"
+php_xdebug_remote_enable: "true"
+php_xdebug_remote_log: /var/www/xdebug-remote.log
+php_xdebug_remote_port: "9000"
+
+# Server settings ######################################################################################################
+server_timezone: "America/Vancouver"
+server_document_root: "/var/www"
+
+# SSL keys #############################################################################################################
+ssl_crt_data: |
+  -----BEGIN CERTIFICATE-----
+  MIIExzCCA6+gAwIBAgIJAMJsYjO2J+96MA0GCSqGSIb3DQEBBQUAMIGdMQswCQYD
+  VQQGEwJDQTEZMBcGA1UECBMQQnJpdGlzaCBDb2x1bWJpYTEYMBYGA1UEBxMPTmV3
+  IFdlc3RtaW5zdGVyMREwDwYDVQQKEwhNdWdvIFdlYjEaMBgGA1UEAxMRZmluZGF0
+  b3Bkb2MubG9jYWwxKjAoBgkqhkiG9w0BCQEWG3dlYm1hc3RlckBmaW5kYXRvcGRv
+  Yy5sb2NhbDAeFw0xNzA4MjQyMjI3NTNaFw0xODA4MjQyMjI3NTNaMIGdMQswCQYD
+  VQQGEwJDQTEZMBcGA1UECBMQQnJpdGlzaCBDb2x1bWJpYTEYMBYGA1UEBxMPTmV3
+  IFdlc3RtaW5zdGVyMREwDwYDVQQKEwhNdWdvIFdlYjEaMBgGA1UEAxMRZmluZGF0
+  b3Bkb2MubG9jYWwxKjAoBgkqhkiG9w0BCQEWG3dlYm1hc3RlckBmaW5kYXRvcGRv
+  Yy5sb2NhbDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMcPegJLY7z8
+  YiVrkP01RxPhK56hjdN194/lq+7+1eBL9nV/odVTZzHAmrRvjMSEB3vDBRgNTjB7
+  FRHw88adVSHq4TJjjh1OqFs8Jxrm/8BjGfCWh07u3EeETejNVpYJsMCa52FTpC8R
+  DuCxWdYVtYaq3EjG9lNNQtEho8MXocYBpMQUS1QJ6ZZIFfzBHhJuXKUSpiov1cNT
+  BndYxpIXRSrBt4VtnWgu+LO36uW6ODN9tdeKfi81m2/wSLZYMiJMFnYAQAJs0Cyn
+  IzV+qVBw+S/7+mf2o0bMcNwDE6HRGekKpz6Abi4A8dQz05qq2u7iqLSbNr6LXd4j
+  QmiFxYH5KUcCAwEAAaOCAQYwggECMB0GA1UdDgQWBBT43BoDec2L8XFFEyO1c7zT
+  OwLquDCB0gYDVR0jBIHKMIHHgBT43BoDec2L8XFFEyO1c7zTOwLquKGBo6SBoDCB
+  nTELMAkGA1UEBhMCQ0ExGTAXBgNVBAgTEEJyaXRpc2ggQ29sdW1iaWExGDAWBgNV
+  BAcTD05ldyBXZXN0bWluc3RlcjERMA8GA1UEChMITXVnbyBXZWIxGjAYBgNVBAMT
+  EWZpbmRhdG9wZG9jLmxvY2FsMSowKAYJKoZIhvcNAQkBFht3ZWJtYXN0ZXJAZmlu
+  ZGF0b3Bkb2MubG9jYWyCCQDCbGIztifvejAMBgNVHRMEBTADAQH/MA0GCSqGSIb3
+  DQEBBQUAA4IBAQBK5YPkJieflXK9ejBQY1tKWCFQcf19yTzY6cJFggICVlb8b7uD
+  HRXKCrsEfYllAbNQhINJU8sN/Q+WNIo2VIYG1Mf2BjHCTVwGtk1ban9FdciiVwfn
+  S+tncLtAf1geMDU8UizCn3LWNpXhDlx5aVFMhZdqVgVhj/Bnuug+b+bLV6gMX7P9
+  eJhu5SY5EZdfOCOvr1JnwaJu6sBfhDA/QKwFQVgVuMkmTUbDAfGfDVilUitmu1Gf
+  MoN3qH1vsMFnaiz8PEwK3Z4wgVNXZ+84Uhg2u49hofGTspQVWyLoSuDXbLZfEmDd
+  leAPOrIHvLw/J0bMM73xBjBSTP0+3V1/3m48
+  -----END CERTIFICATE-----
+  -----BEGIN DH PARAMETERS-----
+  MIIBCAKCAQEA9tXX9cV0ru18Nb0w9BY+Efj/7pghjWtGjg1NpXJnrkURRIIF2SL/
+  Jzb0I7zGwPEFob5zgwaYzD8yNtE3m1Zr9JPbpsDNbRZvpyv6LKgB16/guPFULF+S
+  tWrICvv29RtZ5htrFZHPV/1FOuuDkhuoPUs+QYZCOfonyWMvHQkZY2MwVWaepyiY
+  Kx2UU3yxSooYdSPS7rm7HkabaqSf9taHztZ4iinQT50aWMBzQNvL7CfuuXZ+VPfS
+  AI/Mzr65Y7NWzIXCx+UA5q4RLVAy+6BMG6h7pb469KKtenL22Y/mIwB91FAmLa9m
+  qkNBOcp6b2lGTxf5ZeGjSlMxTYci3yXTiwIBAg==
+  -----END DH PARAMETERS-----
+ssl_key_data: |
+  -----BEGIN RSA PRIVATE KEY-----
+  MIIEogIBAAKCAQEAxw96AktjvPxiJWuQ/TVHE+ErnqGN03X3j+Wr7v7V4Ev2dX+h
+  1VNnMcCatG+MxIQHe8MFGA1OMHsVEfDzxp1VIerhMmOOHU6oWzwnGub/wGMZ8JaH
+  Tu7cR4RN6M1WlgmwwJrnYVOkLxEO4LFZ1hW1hqrcSMb2U01C0SGjwxehxgGkxBRL
+  VAnplkgV/MEeEm5cpRKmKi/Vw1MGd1jGkhdFKsG3hW2daC74s7fq5bo4M32114p+
+  LzWbb/BItlgyIkwWdgBAAmzQLKcjNX6pUHD5L/v6Z/ajRsxw3AMTodEZ6QqnPoBu
+  LgDx1DPTmqra7uKotJs2votd3iNCaIXFgfkpRwIDAQABAoIBAH+ZoiI6ZVLNjbRj
+  AWvubQOHQUjMUneMlQa+uLnYzQycZP3otLpkXi/8QK8NGnUWFR32YxuJ2+cj3tvD
+  UuCsFdhKEdUVEBIlS7JAGukZzjNq00Pvmgi1AKsvWimzBp/i0lSEd3FiBkrNanYJ
+  +YZMIDKU7+QO9fNsATrBj5INYfvkDGr+1yJvlyVIOSrY2v1HzLg500vXHPwvXOvH
+  dIQyYNkLMiihBZYD3EGo/S53MfOqiT5Tdm4gk8e2iXyso4rTPqzz4lAtCgyu9zLT
+  72l2yqGInuvocVfG6NOATDS6sDyCbr5oOnRpCYyKW7w2hukQryqbLBv9+iTFZbck
+  rpy8++ECgYEA4gQnwMOl6ZUTghIcLOJEC7qTCzmc+UyZCLQ+CMvBNJIOpG5kgr5c
+  wMrJR5U95tmy0Q2Lzk8bSV/d2XaHvryr5YbKLnpbzXtZvlPBqB+xF/MQDwfRBiep
+  1ecLlMxXDUlUhc18L3uvSF/1GeiztBujm/knVFKDswtt1AlNqDLZxK8CgYEA4Xfd
+  BpO2omL6WuJnxhFTb9wv2kfVjwpXHnE2vx4UzmKJpET5u/vlSlDoso1cObB98rCX
+  d0EiVy4G8lG6rrR5fIhhmEPIjdPfTe8QiW1CdPlI+yGBtSd4Tf1n6liux3CdVV4b
+  lDBBnHPX6MjT5fpC3O/YUWH8ov59QXH8UuCCuukCgYBOAXci7aOmoaARBWUaDKHF
+  lohHmIPX+xraSTMb4A73sO1CzSL9iOwEUjjz7stlkH9J7a3x75WQVnkAJAunxgBi
+  AIppTiu/GLKZoNi2yPFbPbWuKll3EVtpiwuROJFW8ZctcwVIchzGEvBKF+ll4SAv
+  pedwD+aKdgha5TcbNSm52wKBgFhARm8wmiftffjc7amFVpdOJBzYSSr37SmpPriH
+  2bT+tMlrhiSicBkqmippUlPyVRoNLPwsrnhZN7bZbqy7T2IDL9Adl/6Lk7g5fsuL
+  zJtkh8BkWRTDIj/ElEwR8jd2SN8FOt5CFSxb24LuOKKn1kwMRSt1oyFZY0WejBkU
+  b5chAoGAUwbufc1NvO8vbvwokFhrpr9pvQUCiodXakgpDNd0NCK55pvgCe6P0m1T
+  tTUvisXD5roE36t5GVqdadufkwlRWSAj00t226dBZQB8HgULlKrkercpmlnCPQn0
+  J66Q4ypWowRnMuGTUzOmi0ZVujpFUOPEDeNcTsYHlQagp15AIbk=
+
+# Varnish settings #####################################################################################################
+## the packagecloud repository doesn't include bionic builds for older versions of varnish so if we're installing
+## varnish 4.x or 5.x, we need to install the xenial package instead (the varnish_apt variables override the ones set
+## in the geerlingguy.varnish role).
+varnish_apt_repo_default: "{{ 'deb https://packagecloud.io/varnishcache/varnish' + server_varnish_version|replace('.', '') + '/' + ansible_distribution | lower + '/ ' + ansible_distribution_release + ' main' }}"
+varnish_apt_repo: "{{ varnish_apt_repo_default|regex_replace('bionic', 'xenial') if server_varnish_version is search('[4|5].*') else varnish_apt_repo_default }}"
+varnish_default_backend_host: "127.0.0.1"
+varnish_default_backend_port: "80"
+varnish_listen_port: "8080"
+varnish_version: '{{ server_varnish_version }}'

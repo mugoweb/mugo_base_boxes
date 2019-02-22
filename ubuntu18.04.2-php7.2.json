@@ -1,0 +1,160 @@
+{
+  "builders": [
+    {
+      "name": "local",
+      "boot_command": [
+        "<esc><wait>",
+        "<esc><wait>",
+        "<enter><wait>",
+        "/install/vmlinuz<wait>",
+        " auto<wait>",
+        " console-setup/ask_detect=false<wait>",
+        " console-setup/layoutcode=us<wait>",
+        " console-setup/modelcode=pc105<wait>",
+        " debconf/frontend=noninteractive<wait>",
+        " debian-installer=en_US.UTF-8<wait>",
+        " fb=false<wait>",
+        " initrd=/install/initrd.gz<wait>",
+        " kbd-chooser/method=us<wait>",
+        " keyboard-configuration/layout=USA<wait>",
+        " keyboard-configuration/variant=USA<wait>",
+        " locale=en_US.UTF-8<wait>",
+        " netcfg/get_domain=vm<wait>",
+        " netcfg/get_hostname=packer<wait>",
+        " grub-installer/bootdev=/dev/sda<wait>",
+        " noapic<wait>",
+        " preseed/url=http://{{.HTTPIP}}:{{.HTTPPort}}/preseed.cfg<wait>",
+        " passwd/root-password={{user `local_builder_root_password`}}",
+        " passwd/root-password-again={{user `local_builder_root_password`}}",
+        " passwd/user-fullname={{user `local_builder_username`}}",
+        " passwd/user-uid=1000",
+        " passwd/user-password={{user `local_builder_password`}}",
+        " passwd/user-password-again={{user `local_builder_password`}}",
+        " passwd/username={{user `local_builder_username`}}",
+        " -- <wait>",
+        "<enter><wait>"
+      ],
+      "boot_wait": "10s",
+      "disk_size": "{{user `vb_disk_size`}}",
+      "guest_additions_path": "VBoxGuestAdditions_{{.Version}}.iso",
+      "guest_os_type": "Ubuntu_64",
+      "hard_drive_interface": "sata",
+      "headless": false,
+      "http_directory": "http",
+      "iso_checksum": "{{user `iso_checksum`}}",
+      "iso_checksum_type": "{{user `iso_checksum_type`}}",
+      "iso_urls": [
+        "iso/{{user `iso_name`}}",
+        "{{user `iso_mirror`}}/{{user `iso_mirror_directory`}}/{{user `iso_name`}}"
+      ],
+      "output_directory": "builds/virtualbox",
+      "sata_port_count": 5,
+      "shutdown_command": "echo '{{user `local_builder_password` }}'|sudo -S shutdown -P now",
+      "ssh_password": "{{user `local_builder_password`}}",
+      "ssh_port": 22,
+      "ssh_username": "{{user `local_builder_username`}}",
+      "ssh_wait_timeout": "10000s",
+      "type": "virtualbox-iso",
+      "vboxmanage": [
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--memory",
+          "{{user `vb_memory`}}"
+        ],
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--cpus",
+          "{{user `vb_cpus`}}"
+        ]
+      ],
+      "virtualbox_version_file": ".vbox_version",
+      "vm_name": "{{user `image_name`}}-php{{user `server_php_version`}}-v{{user `version`}}"
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "vagrant",
+      "compression_level": "8",
+      "output": "builds/{{user `image_name`}}-php{{user `server_php_version`}}-v{{user `version`}}.box"
+    },{
+      "type": "checksum",
+      "checksum_types": [
+        "sha1"
+      ],
+      "output": "builds/{{user `image_name`}}-php{{user `server_php_version`}}-v{{user `version`}}.checksum"
+    },{
+      "type": "shell-local",
+      "environment_vars": [
+        "image_name={{user `image_name`}}",
+        "server_php_version={{user `server_php_version`}}",
+        "version={{user `version`}}"
+      ],
+      "script": "scripts/common/create_vagrant_json.sh"
+    }
+  ],
+  "provisioners": [
+    {
+      "environment_vars": [
+        "local_builder_username={{user `local_builder_username`}}"
+      ],
+      "execute_command": "echo '{{user `local_builder_password`}}' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
+      "expect_disconnect": true,
+      "only": [
+        "local"
+      ],
+      "scripts": [
+        "scripts/common/sudo.sh",
+        "scripts/ubuntu/update.sh",
+        "scripts/ubuntu/ansible.sh",
+        "scripts/common/sshd.sh",
+        "scripts/ubuntu/networking.sh",
+        "scripts/common/virtualbox.sh"
+      ],
+      "type": "shell"
+    },{
+      "type": "ansible-local",
+      "playbook_dir": "ansible",
+      "clean_staging_directory": true,
+      "playbook_file": "ansible/main.yml",
+      "galaxy_file": "ansible/requirements.yml",
+      "extra_arguments": [
+        "--extra-vars",
+        "'{\"vars_file_name\":\"{{user `image_name`}}.yml\",\"server_users\":{{user `server_users_local`}},\"server_php_version\":\"{{user `server_php_version`}}\",\"server_varnish_version\":\"{{user `server_varnish_version`}}\"}'"
+      ]
+    },{
+      "environment_vars": [
+        "local_builder_username={{user `local_builder_username`}}"
+      ],
+      "execute_command": "echo '{{user `local_builder_password`}}' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
+      "expect_disconnect": true,
+      "scripts": [
+        "scripts/ubuntu/cleanup.sh",
+        "scripts/common/minimize.sh",
+        "scripts/common/scrub_local_builder_artifacts.sh"
+      ],
+      "type": "shell"
+    }
+  ],
+  "variables": {
+    "iso_checksum": "a2cb36dc010d98ad9253ea5ad5a07fd6b409e3412c48f1860536970b073c98f5",
+    "iso_checksum_type": "sha256",
+    "iso_mirror": "http://cdimage.ubuntu.com",
+    "iso_mirror_directory": "ubuntu/releases/18.04.2/release",
+    "iso_name": "ubuntu-18.04.2-server-amd64.iso",
+    "image_name": "ubuntu18.04.2",
+    "local_builder_password": "packer",
+    "local_builder_root_password": "root",
+    "local_builder_username": "packer",
+    "server_php_version": "7.2",
+    "server_users_local": "[ \"ezpub\", \"vagrant\" ]",
+    "server_users_stage": "[ \"ezpub\" ]",
+    "server_users_prod": "[ \"ezpub\" ]",
+    "server_varnish_version": "60lts",
+    "version": "0.1",
+    "vb_cpus": "1",
+    "vb_disk_size": "102400",
+    "vb_memory": "1024"
+  }
+}

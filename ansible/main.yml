@@ -1,0 +1,153 @@
+- hosts: all
+  become: yes
+  gather_facts: yes
+  vars_files:
+    - "host_vars/common.yml"
+    - "host_vars/{{ vars_file_name }}"
+
+  pre_tasks:
+    - name: Create /etc/ssl/ if it does not exist"
+      file:
+        dest: "/etc/ssl"
+        state: directory
+
+    - name: Add development SSL certs
+      copy:
+        content: "{{ item.value.content }}"
+        dest: "{{ item.value.dest }}"
+        owner: "{{ item.value.owner }}"
+        group: "{{ item.value.group }}"
+        mode: "{{ item.value.mode }}"
+      with_dict:
+        ssl_cert_crt:
+          content: "{{ ssl_crt_data }}"
+          dest: "/etc/ssl/dev.crt"
+          owner: "root"
+          group: "root"
+          mode: "0600"
+        ssl_cert_key:
+          content: "{{ ssl_key_data }}"
+          dest: "/etc/ssl/dev.key"
+          owner: "root"
+          group: "root"
+          mode: "0600"
+
+    - name: install platform-agnostic packages
+      package:
+        name:
+          - acl
+          - atop
+          - bash-completion
+          - byobu
+          - curl
+          - git
+          - golang
+          - htop
+          - iotop
+          - pv
+          - vim
+          - redis
+          - rsync
+          - sendmail
+          - subversion
+          - tree
+          - unzip
+          - vim
+          - wget
+          - zip
+        state: present
+
+    - name: install platform-specific packages for "{{ os_type }}"
+      package:
+        name: "{{ platform_specific_packages }}"
+        state: present
+
+    - name: set the server timezone to "{{ server_timezone }}"
+      timezone:
+        name: "{{ server_timezone }}"
+
+  roles:
+    - role: geerlingguy.repo-remi
+      when: os_type == "CentOS"
+    - role: geerlingguy.repo-remi
+      when: os_type == "CentOS"
+    - geerlingguy.php-versions
+    - geerlingguy.php
+    - role: geerlingguy.php-xdebug
+      when: packer_build_name != "prod" and server_php_version != "5.6"
+    - geerlingguy.apache
+    - geerlingguy.nginx
+    - geerlingguy.varnish
+    - geerlingguy.mysql # note, due to a bug geerlingguy.mysql/tasks/replication.yml must be commented out (hence, the role is included in this git repo, instead of being in requirements.yml)
+    - geerlingguy.php-mysql
+    - geerlingguy.memcached
+    - geerlingguy.php-memcached
+    - geerlingguy.java
+    - geerlingguy.composer
+    - geerlingguy.nodejs
+    - role: geerlingguy.nfs
+      when: packer_build_name == "local"
+
+  post_tasks:
+    - name: create server users and give them sudo access (by default, the password is the same as the username)
+      user:
+        name: "{{ item }}"
+        append: yes
+        createhome: yes
+        groups:
+          - "{{ admin_group }}"
+          - "{{ apache_group }}"
+        password: "{{ item | password_hash('sha512') }}"
+        shell: /bin/bash
+        state: present
+        update_password: on_create
+      with_items: "{{ server_users }}"
+
+    - name: add an ~/.ssh folder for each user
+      file:
+        dest: "/home/{{ server_users }}/.ssh"
+        state: directory
+      with_items: "{{ server_users }}"
+
+    - name: add a /etc/systemd/system/"{{ php_webserver_daemon }}".service.d/ folder to set an apache umask override in
+      file:
+        dest: "/etc/systemd/system/{{ php_webserver_daemon }}.service.d/"
+        state: directory
+
+    - name: set an apache umask override
+      copy:
+        dest: "/etc/systemd/system/{{ php_webserver_daemon }}.service.d/override.conf"
+        content: |
+          [Service]
+          UMask=0002
+
+    - name: Reload apache
+      systemd:
+        daemon_reload: true
+        state: reloaded
+        name: "{{ php_webserver_daemon }}"
+
+    - name: Add the apache user to each server_user's group
+      user:
+        name: "{{ php_webserver_daemon }}"
+        groups: "{{ item }}"
+        append: yes
+      with_items: "{{ server_users }}"
+
+    - name: add the Vagrant insecure key to each user's ~/.ssh/authorized_keys file when building a local box
+      get_url:
+        url: "https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub"
+        dest: "/home/{{ server_users }}/.ssh/authorized_keys"
+        group: "{{ item }}"
+        owner: "{{ item }}"
+      with_items: "{{ server_users }}"
+      when: packer_build_name == "local"
+
+    - name: Add dotfiles to each user's user directory
+      copy:
+        src: "files/dotfiles/"
+        dest: "/home/{{ item }}"
+        owner: "{{ item }}"
+        group: "{{ item }}"
+        mode: "u=rw,g=r,o=r"
+      with_items: "{{ server_users }}"
