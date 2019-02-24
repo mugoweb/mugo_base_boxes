@@ -4,15 +4,15 @@ apache_listen_ip: "*"
 apache_packages_state: latest
 apache_remove_default_vhost: true
 apache_vhosts:
-  - servername: "www.dev.local"
-    serveralias: "dev.local"
+  - servername: "null"
+    serveralias: "*"
     documentroot: "{{ server_document_root }}"
     extra_parameters: |
       RewriteCond %{HTTP_HOST} !^www\. [NC]
       RewriteRule ^(.*)$ http://www.%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 apache_vhosts_ssl:
-  - servername: "www.dev.local"
-    serveralias: "dev.local"
+  - servername: "null"
+    serveralias: "*"
     documentroot: "{{ server_document_root }}"
     certificate_file: "/etc/ssl/dev.crt"
     certificate_key_file: "/etc/ssl/dev.key"

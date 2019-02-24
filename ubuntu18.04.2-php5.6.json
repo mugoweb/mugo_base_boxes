@@ -49,10 +49,10 @@
       ],
       "output_directory": "builds/virtualbox",
       "sata_port_count": 5,
-      "shutdown_command": "echo '{{user `local_builder_password` }}'|sudo -S shutdown -P now",
-      "ssh_password": "{{user `local_builder_password`}}",
+      "shutdown_command": "shutdown -P now",
+      "ssh_password": "{{user `local_builder_root_password`}}",
       "ssh_port": 22,
-      "ssh_username": "{{user `local_builder_username`}}",
+      "ssh_username": "root",
       "ssh_wait_timeout": "10000s",
       "type": "virtualbox-iso",
       "vboxmanage": [
@@ -99,13 +99,11 @@
       "environment_vars": [
         "local_builder_username={{user `local_builder_username`}}"
       ],
-      "execute_command": "echo '{{user `local_builder_password`}}' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
       "expect_disconnect": true,
       "only": [
         "local"
       ],
       "scripts": [
-        "scripts/common/sudo.sh",
         "scripts/ubuntu/update.sh",
         "scripts/ubuntu/ansible.sh",
         "scripts/common/sshd.sh",
@@ -127,7 +125,6 @@
       "environment_vars": [
         "local_builder_username={{user `local_builder_username`}}"
       ],
-      "execute_command": "echo '{{user `local_builder_password`}}' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
       "expect_disconnect": true,
       "scripts": [
         "scripts/ubuntu/cleanup.sh",

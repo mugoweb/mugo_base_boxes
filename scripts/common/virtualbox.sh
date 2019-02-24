@@ -2,7 +2,7 @@
 # forked from https://github.com/chef/bento
 
 # set a default HOME_DIR environment variable if not set
-HOME_DIR="/home/$local_builder_username";
+HOME_DIR="/root";
 
 VER="`cat $HOME_DIR/.vbox_version`";
 ISO="VBoxGuestAdditions_$VER.iso";

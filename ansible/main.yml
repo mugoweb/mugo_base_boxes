@@ -40,6 +40,7 @@
           - bash-completion
           - byobu
           - curl
+          - firewalld
           - git
           - golang
           - htop
@@ -89,6 +90,13 @@
       when: packer_build_name == "local"
 
   post_tasks:
+    - name: give "{{ apache_group }}" ownership of "{{ server_document_root }}"
+      file:
+        path: "{{ server_document_root }}"
+        owner: "{{ apache_group }}"
+        group: "{{ apache_group }}"
+        recurse: yes
+
     - name: create server users and give them sudo access (by default, the password is the same as the username)
       user:
         name: "{{ item }}"
@@ -151,3 +159,38 @@
         group: "{{ item }}"
         mode: "u=rw,g=r,o=r"
       with_items: "{{ server_users }}"
+
+    - name: configure firewalld service rules
+      firewalld:
+        service: "{{ item }}"
+        permanent: yes
+        state: enabled
+      with_items:
+        - ftp
+        - http
+        - https
+        - mysql
+        - nfs
+        - pop3
+        - pop3s
+        - smtp
+        - smtps
+        - ntp
+        - samba
+        - samba-client
+        - ssh
+        - telnet
+
+    - name: configure firewalld port rules
+      firewalld:
+        port: "{{ item }}"
+        permanent: yes
+        state: enabled
+      with_items:
+        - "8000-9000/tcp" # open up a bunch for ports for alternative varnish and solr configs
+
+    - name: enable and start firewalld service
+      service:
+        name: firewalld
+        state: started
+        enabled: yes

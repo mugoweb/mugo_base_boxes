@@ -54,6 +54,7 @@ The boxes include the following software:
 * `tree`
 * `unzip`
 * `vim`
+* [Virtual Box Guest Additions](https://docs.oracle.com/cd/E36500_01/E36502/html/qs-guest-additions.html)
 * `wget`
 * `zip`
 

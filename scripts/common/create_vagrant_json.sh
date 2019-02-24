@@ -4,8 +4,8 @@ if [ $packer_build_name != "local" ]; then
     exit 0
 fi
 
-checksum=$(<../../builds/$image_name-php$server_php_version-v$version.checksum)
-destdir=../../builds/$image_name-php$server_php_version.json
+checksum=(`head -n 1 ./builds/$image_name-php$server_php_version-v$version.checksum`)
+destdir="./builds/$image_name-php$server_php_version.json"
 
 json="{
   \"name\": \"mugo-$image_name-php$server_php_version\",
