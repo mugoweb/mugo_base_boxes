@@ -145,11 +145,11 @@ There's only a single playbook, `ansible/main.yml`, which is used for all builds
 
 Within `main.yml` you can selectively run tasks based on variable conditions:
 ```
-    - name: cleanup default php packages on ubuntu php 5.6 installations
-      package:
-        name: "php7.*"
-        state: absent
-      when: (server_php_version is search('[5].*')) and (os_type == "Ubuntu")
+- name: cleanup default php packages on ubuntu php 5.6 installations
+  package:
+    name: "php7.*"
+    state: absent
+  when: (server_php_version is search('[5].*')) and (os_type == "Ubuntu")
 ```
 
 The same is true for roles:

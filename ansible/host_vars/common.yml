@@ -64,7 +64,6 @@ php_disable_functions:
   - pcntl_wexitstatus
   - pcntl_wtermsig
   - pcntl_wstopsig
-  - pcntl_signal
   - pcntl_signal_dispatch
   - pcntl_get_last_error
   - pcntl_strerror
@@ -108,7 +107,7 @@ php_xdebug_idekey: xdebug.ide
 php_xdebug_remote_autostart: "true"
 php_xdebug_remote_connect_back: "true"
 php_xdebug_remote_enable: "true"
-php_xdebug_remote_log: /var/www/xdebug-remote.log
+php_xdebug_remote_log: "{{ server_document_root }}/xdebug-remote.log"
 php_xdebug_remote_port: "9000"
 
 # Server settings ######################################################################################################
