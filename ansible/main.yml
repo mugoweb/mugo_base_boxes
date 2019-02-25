@@ -58,12 +58,12 @@
           - zip
         state: present
 
-    - name: install platform-specific packages for "{{ os_type }}"
+    - name: install platform-specific packages for {{ os_type }}
       package:
         name: "{{ platform_specific_packages }}"
         state: present
 
-    - name: set the server timezone to "{{ server_timezone }}"
+    - name: set the server timezone to {{ server_timezone }}
       timezone:
         name: "{{ server_timezone }}"
 
@@ -90,12 +90,49 @@
       when: packer_build_name == "local"
 
   post_tasks:
-    - name: give "{{ apache_group }}" ownership of "{{ server_document_root }}"
+    - name: cleanup default php packages on ubuntu php 5.6 installations
+      package:
+        name: "php7.*"
+        state: absent
+      when: (server_php_version is search('[5].*')) and (os_type == "Ubuntu")
+
+    - name: disable mpm apache modules so we can enable mod php{{ server_php_version }}
+      apache2_module:
+        force: true
+        ignore_configcheck: true
+        name: "{{ item }}"
+        state: absent
+      with_items:
+        - mpm_prefork
+        - mpm_worker
+        - mpm_event
+      when: (server_php_version is search('[5].*')) and (os_type == "Ubuntu")
+
+    - name: enable apache's mod php{{ server_php_version }}, which will also enable all necessary mpm modules
+      apache2_module:
+        ignore_configcheck: true
+        name: "php{{ server_php_version }}"
+        state: present
+      when: (server_php_version is search('[5].*')) and (os_type == "Ubuntu")
+
+    - name: give {{ apache_group }} ownership of {{ server_document_root }}
       file:
         path: "{{ server_document_root }}"
         owner: "{{ apache_group }}"
         group: "{{ apache_group }}"
+        mode: "u=rwX,g=rwX,o=rX"
         recurse: yes
+
+    - name: create an index.php for the default box
+      copy:
+        content: |
+          <?php
+          phpinfo();
+          ?>
+        dest: "{{ server_document_root }}/index.php"
+        group: "{{ apache_group }}"
+        mode: u+rw,g+rw,o+r
+        owner: "{{ apache_group }}"
 
     - name: create server users and give them sudo access (by default, the password is the same as the username)
       user:
@@ -113,11 +150,11 @@
 
     - name: add an ~/.ssh folder for each user
       file:
-        dest: "/home/{{ server_users }}/.ssh"
+        dest: "/home/{{ item }}/.ssh"
         state: directory
       with_items: "{{ server_users }}"
 
-    - name: add a /etc/systemd/system/"{{ php_webserver_daemon }}".service.d/ folder to set an apache umask override in
+    - name: add a /etc/systemd/system/{{ php_webserver_daemon }}.service.d/ folder to set an apache umask override in
       file:
         dest: "/etc/systemd/system/{{ php_webserver_daemon }}.service.d/"
         state: directory
@@ -135,9 +172,9 @@
         state: reloaded
         name: "{{ php_webserver_daemon }}"
 
-    - name: Add the apache user to each server_user's group
+    - name: Add the apache group to each user's group
       user:
-        name: "{{ php_webserver_daemon }}"
+        name: "{{ apache_group }}"
         groups: "{{ item }}"
         append: yes
       with_items: "{{ server_users }}"
@@ -145,13 +182,20 @@
     - name: add the Vagrant insecure key to each user's ~/.ssh/authorized_keys file when building a local box
       get_url:
         url: "https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub"
-        dest: "/home/{{ server_users }}/.ssh/authorized_keys"
+        dest: "/home/{{ item }}/.ssh/authorized_keys"
         group: "{{ item }}"
         owner: "{{ item }}"
       with_items: "{{ server_users }}"
       when: packer_build_name == "local"
 
-    - name: Add dotfiles to each user's user directory
+    - name: enable passwordless sudo when building a local box
+      copy:
+        dest: "/etc/sudoers.d/99_{{ item }}"
+        content: "{{ item }} ALL=(ALL) NOPASSWD:ALL"
+      with_items: "{{ server_users }}"
+      when: packer_build_name == "local"
+
+    - name: add dotfiles to each user's user directory
       copy:
         src: "files/dotfiles/"
         dest: "/home/{{ item }}"

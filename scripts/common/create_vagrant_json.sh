@@ -1,10 +1,6 @@
 #!/bin/bash
 
-if [ $packer_build_name != "local" ]; then
-    exit 0
-fi
-
-checksum=(`head -n 1 ./builds/$image_name-php$server_php_version-v$version.checksum`)
+checksum=(`sha1sum ./builds/$image_name-php$server_php_version-v$version.box | awk '{ print $1 }'`)
 destdir="./builds/$image_name-php$server_php_version.json"
 
 json="{

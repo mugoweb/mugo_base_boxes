@@ -1,10 +1,10 @@
 # Apache settings ######################################################################################################
 apache_enablerepo: "epel"
+apache_group: "apache"
+apache_group_id: "48"
 
 # Build settings ######################################################################################################
 admin_group: "wheel"
-apache_group: "apache"
-apache_group_id: "48"
 platform_specific_packages:
   - bash-completion-extras
   - bind-utils
@@ -17,7 +17,6 @@ platform_specific_packages:
 os_type: "CentOS"
 
 # PHP settings ######################################################################################################
-php_webserver_daemon: "httpd"
 php_enablerepo: "epel"
 php_packages_extra:
   - php-devel
@@ -25,3 +24,4 @@ php_packages_extra:
   - php-pecl-igbinary
   - php-pecl-imagick
   - php-pecl-msgpack
+php_webserver_daemon: "httpd"

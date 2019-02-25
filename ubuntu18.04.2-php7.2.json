@@ -20,14 +20,13 @@
         " keyboard-configuration/variant=USA<wait>",
         " locale=en_US.UTF-8<wait>",
         " netcfg/get_domain=vm<wait>",
-        " netcfg/get_hostname=packer<wait>",
+        " netcfg/get_hostname=mugo<wait>",
         " grub-installer/bootdev=/dev/sda<wait>",
         " noapic<wait>",
         " preseed/url=http://{{.HTTPIP}}:{{.HTTPPort}}/preseed.cfg<wait>",
         " passwd/root-password={{user `local_builder_root_password`}}",
         " passwd/root-password-again={{user `local_builder_root_password`}}",
         " passwd/user-fullname={{user `local_builder_username`}}",
-        " passwd/user-uid=1000",
         " passwd/user-password={{user `local_builder_password`}}",
         " passwd/user-password-again={{user `local_builder_password`}}",
         " passwd/username={{user `local_builder_username`}}",
@@ -79,12 +78,6 @@
       "compression_level": "8",
       "output": "builds/{{user `image_name`}}-php{{user `server_php_version`}}-v{{user `version`}}.box"
     },{
-      "type": "checksum",
-      "checksum_types": [
-        "sha1"
-      ],
-      "output": "builds/{{user `image_name`}}-php{{user `server_php_version`}}-v{{user `version`}}.checksum"
-    },{
       "type": "shell-local",
       "environment_vars": [
         "image_name={{user `image_name`}}",
@@ -128,8 +121,7 @@
       "expect_disconnect": true,
       "scripts": [
         "scripts/ubuntu/cleanup.sh",
-        "scripts/common/minimize.sh",
-        "scripts/common/scrub_local_builder_artifacts.sh"
+        "scripts/common/minimize.sh"
       ],
       "type": "shell"
     }

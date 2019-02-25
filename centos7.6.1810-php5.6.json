@@ -52,12 +52,6 @@
       "compression_level": "8",
       "output": "builds/{{user `image_name`}}-php{{user `server_php_version`}}-v{{user `version`}}.box"
     },{
-      "type": "checksum",
-      "checksum_types": [
-        "sha1"
-      ],
-      "output": "builds/{{user `image_name`}}-php{{user `server_php_version`}}-v{{user `version`}}.checksum"
-    },{
       "type": "shell-local",
       "environment_vars": [
         "image_name={{user `image_name`}}",

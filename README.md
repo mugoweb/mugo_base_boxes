@@ -1,9 +1,10 @@
 # Mugo Base Boxes
-These packer configuration files allow us to build and update [Mugo's](http://mugo.ca) primary Vagrant development boxes:
-* CentOS 7.2 -- PHP 5.6 LAMP stack with Varnish 4.1
-* CentOS 7.2 -- PHP 7.2 LAMP stack with Varnish 6.0
-* Ubuntu 18.04 -- PHP 5.6 LAMP stack with Varnish 4.1
-* Ubuntu 18.04 -- PHP 7.2 LAMP stack with Varnish 6.0
+These packer configuration files allow us to build and update [Mugo's](http://mugo.ca) Vagrant development boxes. They
+can be used to run existing projects or bootstrap new ones. Currently, there are 4 variants:
+* **CentOS 7.2**: PHP 5.6 / Varnish 4.1
+* **CentOS 7.2**: PHP 7.2 / Varnish 6.0
+* **Ubuntu 18.04**: PHP 5.6 / Varnish 4.1
+* **Ubuntu 18.04**: PHP 7.2 / Varnish 6.0
 
 Scripts automate building, provisioning, cleaning up, shrinking, and exporting the boxes.
 
@@ -13,7 +14,7 @@ To build a box, simply invoke `packer` with the box's configuration file:
 packer build ubuntu18.04.2-php7.2.json
 ```
 After a successful build, the corresponding Vagrant box can be found in the `builds` folder. The build process also 
-generates corresponding `.checksum` and `.json` files, which facilitate cloud-based versioned usage and can be
+generates corresponding `.box` and `.json` files, which facilitate cloud-based versioned usage and can be
 uploaded to [Mugo Web's google cloud storage bucket](https://console.cloud.google.com/storage/browser/mugoweb).
 
 ## Defaults
@@ -30,6 +31,7 @@ The boxes are configured as follows:
 * `php-xdebug` installed and available on port `9000` on the PHP 7 boxes
 * `varnish` listening on port `8080`
 * `nginx` installed but not listening
+* `firewalld` installed, enabled, and configured for the stack
 * a local `dev.crt` and `dev.key` in `/etc/ssl`
 * `100G` VirtualBox primary disk (useful on larger projects -- most publicly available boxes have `40G` disks)
 
@@ -78,7 +80,7 @@ The CentOS boxes include the following additional repos:
  * [remi](https://rpms.remirepo.net/)
 
 The apache daemon's umask is set to `0002`, server users belong to the apache group, and the apache daemon belongs to 
-the server users' groups.
+the server users' groups. 
  
 ## Customization
 ### Packer
@@ -143,14 +145,11 @@ There's only a single playbook, `ansible/main.yml`, which is used for all builds
 
 Within `main.yml` you can selectively run tasks based on variable conditions:
 ```
-- name: add the Vagrant insecure key to each user's ~/.ssh/authorized_keys file when building a local box
-  get_url:
-    url: "https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub"
-    dest: "/home/{{ server_users }}/.ssh/authorized_keys"
-    group: "{{ item }}"
-    owner: "{{ item }}"
-  with_items: "{{ server_users }}"
-  when: packer_build_name == "local"
+    - name: cleanup default php packages on ubuntu php 5.6 installations
+      package:
+        name: "php7.*"
+        state: absent
+      when: (server_php_version is search('[5].*')) and (os_type == "Ubuntu")
 ```
 
 The same is true for roles:
