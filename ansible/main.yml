@@ -129,7 +129,7 @@
         owner: "{{ apache_group }}"
         group: "{{ apache_group }}"
         mode: 0777
-      when: server_php_version is search('[7].*'))
+      when: server_php_version is search('[7].*')
 
     - name: create an index.php for the default box
       copy:
