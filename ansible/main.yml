@@ -6,12 +6,12 @@
     - "host_vars/{{ vars_file_name }}"
 
   pre_tasks:
-    - name: Create /etc/ssl/ if it does not exist"
+    - name: create /etc/ssl/ if it does not exist"
       file:
         dest: "/etc/ssl"
         state: directory
 
-    - name: Add development SSL certs
+    - name: add development SSL certs
       copy:
         content: "{{ item.value.content }}"
         dest: "{{ item.value.dest }}"
@@ -174,18 +174,33 @@
           [Service]
           UMask=0002
 
-    - name: Reload apache
+    - name: reload apache
       systemd:
         daemon_reload: true
         state: reloaded
         name: "{{ php_webserver_daemon }}"
 
-    - name: Add the apache group to each user's group
+    - name: add the apache group to each user's group
       user:
         name: "{{ apache_group }}"
         groups: "{{ item }}"
         append: yes
       with_items: "{{ server_users }}"
+
+    - name: force the NFS lock manager to use consistent ports (58577/tcp 36389/udp)
+      copy:
+        src: "files/modprobe.d/lockd.conf"
+        dest: "/etc/modprobe.d/lockd.conf"
+        owner: "root"
+        group: "root"
+        mode: "u=rw,g=r,o=r"
+
+    - name: on ubuntu, force mountd to use mountd port 33333/tcp
+      lineinfile:
+        path: "/etc/default/nfs-kernel-server"
+        regexp: "^RPCMOUNTDOPTS="
+        line: 'RPCMOUNTDOPTS="--port 33333"'
+      when: os_type == "Ubuntu"
 
     - name: add the Vagrant insecure key to each user's ~/.ssh/authorized_keys file when building a local box
       get_url:
@@ -239,7 +254,11 @@
         permanent: yes
         state: enabled
       with_items:
-        - "8000-9000/tcp" # open up a bunch for ports for alternative varnish and solr configs
+        - "111/tcp" # portmapper tcp port
+        - "8000-9000/tcp" # alternative varnish and solr port range
+        - "58577/tcp" # NFS lock manager tcp port
+        - "33333/tcp" # mountd tcp port
+        - "36389/udp" # NFS lock manager udp port
 
     - name: enable and start firewalld service
       service:
