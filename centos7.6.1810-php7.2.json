@@ -20,7 +20,7 @@
         "iso/{{user `iso_name`}}",
         "{{user `iso_mirror`}}/{{user `iso_mirror_directory`}}/{{user `iso_name`}}"
       ],
-      "output_directory": "builds/virtualbox/{{user `image_name`}}",
+      "output_directory": "builds/virtualbox/{{user `image_name`}}-php{{user `server_php_version`}}-v{{user `version`}}",
       "sata_port_count": 5,
       "shutdown_command": "/sbin/halt -h -p",
       "ssh_password": "{{user `local_builder_root_password`}}",

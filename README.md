@@ -13,9 +13,14 @@ To build a box, simply invoke `packer` with the box's configuration file:
 ```
 packer build ubuntu18.04.2-php7.2.json
 ```
-After a successful build, the corresponding Vagrant box can be found in the `builds` folder. The build process also 
-generates a `.json` file to facilitate cloud-based versioned usage (both files should be uploaded to
-[Mugo Web's google cloud storage bucket](https://console.cloud.google.com/storage/browser/mugoweb)).
+After a successful build, the corresponding Vagrant box can be found in the `builds` folder. 
+
+The build process also generates a `.json` file to facilitate cloud-based versioned usage. These can be uploaded to 
+[Mugo Web's google cloud storage bucket](https://console.cloud.google.com/storage/browser/mugoweb) via a browser or 
+the command line:  
+```
+gsutil cp builds/ubuntu18.04.2-php7.2* gs://mugoweb
+```
 
 ## Defaults
 Based on [Hashicorp's recommendation](https://www.vagrantup.com/docs/boxes.html), all boxes are built from scratch 
@@ -34,7 +39,9 @@ The boxes are configured as follows:
 * `nfsd` installed and configured to share `/var/www`
 * `firewalld` installed, enabled, and configured for the stack
 * a local `dev.crt` and `dev.key` in `/etc/ssl`
-* `250G` VirtualBox primary disk (useful on larger projects -- most publicly available boxes have `40G` disks)
+* `250G` VirtualBox primary disk (useful on larger projects -- most publicly available boxes have `40G` disks). **Note:**
+that this means you will need more than `250G` disk space on the machine that you use to build the boxes
+(see `scripts/common/minimize.sh` to understand why).
 
 The boxes include the following software:
 * `acl`
