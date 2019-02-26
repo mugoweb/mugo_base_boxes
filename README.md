@@ -31,6 +31,7 @@ The boxes are configured as follows:
 * `php-xdebug` installed and available on port `9000` on the PHP 7 boxes
 * `varnish` listening on port `8080`
 * `nginx` installed but not listening
+* `nfsd` installed and configured to share `/var/www/html`
 * `firewalld` installed, enabled, and configured for the stack
 * a local `dev.crt` and `dev.key` in `/etc/ssl`
 * `100G` VirtualBox primary disk (useful on larger projects -- most publicly available boxes have `40G` disks)
