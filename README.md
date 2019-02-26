@@ -14,11 +14,11 @@ To build a box, simply invoke `packer` with the box's configuration file:
 packer build ubuntu18.04.2-php7.2.json
 ```
 After a successful build, the corresponding Vagrant box can be found in the `builds` folder. The build process also 
-generates corresponding `.box` and `.json` files, which facilitate cloud-based versioned usage and can be
-uploaded to [Mugo Web's google cloud storage bucket](https://console.cloud.google.com/storage/browser/mugoweb).
+generates a `.json` file to facilitate cloud-based versioned usage (both files should be uploaded to
+[Mugo Web's google cloud storage bucket](https://console.cloud.google.com/storage/browser/mugoweb)).
 
 ## Defaults
-Based on [Hashicorp's recommendtation](https://www.vagrantup.com/docs/boxes.html), all boxes are built from scratch 
+Based on [Hashicorp's recommendation](https://www.vagrantup.com/docs/boxes.html), all boxes are built from scratch 
 using forked versions of the [Bento Box](https://github.com/chef/bento) configuration files.
  
 The boxes are configured as follows:
