@@ -112,7 +112,7 @@ php_xdebug_remote_port: "9000"
 
 # Server settings ######################################################################################################
 server_timezone: "America/Vancouver"
-server_document_root: "/var/www/html"
+server_document_root: "/var/www"
 
 # SSL keys #############################################################################################################
 ssl_crt_data: |
