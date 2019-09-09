@@ -1,20 +1,20 @@
 # Run locally like:
 #   ansible-galaxy install -r requirements.yml
 #   ansible-playbook --connection=local --inventory 127.0.0.1, main.yml --extra-vars 'mysql_root_password=root packer_build_name=local'
-- hosts: all
-  become: yes
-  gather_facts: yes
+- hosts: "all"
+  become: "yes"
+  gather_facts: "yes"
   vars_files:
     - "host_vars/common.yml"
     - "host_vars/{{ vars_file_name }}"
 
   pre_tasks:
-    - name: create /etc/ssl/ if it does not exist"
+    - name: "create /etc/ssl/ if it does not exist"
       file:
         dest: "/etc/ssl"
-        state: directory
+        state: "directory"
 
-    - name: add development SSL certs
+    - name: "add development SSL certs"
       copy:
         content: "{{ item.value.content }}"
         dest: "{{ item.value.dest }}"
@@ -35,106 +35,106 @@
           group: "root"
           mode: "0600"
 
-    - name: install platform-agnostic packages
+    - name: "install platform-agnostic packages"
       package:
         name:
-          - acl
-          - atop
-          - bash-completion
-          - byobu
-          - curl
-          - firewalld
-          - git
-          - golang
-          - htop
-          - iotop
-          - pv
-          - vim
-          - redis
-          - rsync
-          - sendmail
-          - subversion
-          - tree
-          - unzip
-          - vim
-          - wget
-          - zip
-        state: present
+          - "acl"
+          - "atop"
+          - "bash-completion"
+          - "byobu"
+          - "curl"
+          - "firewalld"
+          - "git"
+          - "golang"
+          - "htop"
+          - "iotop"
+          - "pv"
+          - "vim"
+          - "redis"
+          - "rsync"
+          - "sendmail"
+          - "subversion"
+          - "tree"
+          - "unzip"
+          - "vim"
+          - "wget"
+          - "zip"
+        state: "present"
 
-    - name: install platform-specific packages for {{ os_type }}
+    - name: "install platform-specific packages for {{ os_type }}"
       package:
         name: "{{ platform_specific_packages }}"
-        state: present
+        state: "present"
 
-    - name: set the server timezone to {{ server_timezone }}
+    - name: "set the server timezone to {{ server_timezone }}"
       timezone:
         name: "{{ server_timezone }}"
 
   roles:
-    - role: geerlingguy.repo-epel
+    - role: "geerlingguy.repo-epel"
       when: os_type == "CentOS"
-    - role: geerlingguy.repo-remi
+    - role: "geerlingguy.repo-remi"
       when: os_type == "CentOS"
-    - geerlingguy.php-versions
-    - geerlingguy.php
-    - role: geerlingguy.php-xdebug
+    - "geerlingguy.php-versions"
+    - "geerlingguy.php"
+    - role: "geerlingguy.php-xdebug"
       when: packer_build_name != "prod" and server_php_version != "5.6"
-    - geerlingguy.apache
-    - geerlingguy.nginx
-    - geerlingguy.varnish
-    - geerlingguy.mysql # note, due to a bug geerlingguy.mysql/tasks/replication.yml must be commented out (hence, the role is included in this git repo, instead of being in requirements.yml)
-    - geerlingguy.php-mysql
-    - geerlingguy.memcached
-    - geerlingguy.php-memcached
-    - geerlingguy.java
-    - geerlingguy.composer
-    - geerlingguy.nodejs
-    - role: geerlingguy.nfs
+    - "geerlingguy.apache"
+    - "geerlingguy.nginx"
+    - "geerlingguy.varnish"
+    - "geerlingguy.mysql" # note, due to a bug geerlingguy.mysql/tasks/replication.yml must be commented out (hence, the role is included in this git repo, instead of being in requirements.yml)
+    - "geerlingguy.php-mysql"
+    - "geerlingguy.memcached"
+    - "geerlingguy.php-memcached"
+    - "geerlingguy.java"
+    - "geerlingguy.composer"
+    - "geerlingguy.nodejs"
+    - role: "geerlingguy.nfs"
       when: packer_build_name == "local"
 
   post_tasks:
-    - name: cleanup default php packages on ubuntu php 5.6 installations
+    - name: "cleanup default php packages on ubuntu php 5.6 installations"
       package:
         name: "php7.*"
-        state: absent
+        state: "absent"
       when: (server_php_version is search('[5].*')) and (os_type == "Ubuntu")
 
-    - name: disable mpm apache modules so we can enable mod php{{ server_php_version }}
+    - name: "disable mpm apache modules so we can enable mod php{{ server_php_version }}"
       apache2_module:
-        force: true
-        ignore_configcheck: true
+        force: "true"
+        ignore_configcheck: "true"
         name: "{{ item }}"
-        state: absent
+        state: "absent"
       with_items:
-        - mpm_prefork
-        - mpm_worker
-        - mpm_event
+        - "mpm_prefork"
+        - "mpm_worker"
+        - "mpm_event"
       when: os_type == "Ubuntu"
 
-    - name: enable apache's mod php{{ server_php_version }}, which will also enable all necessary mpm modules
+    - name: "enable apache's mod php{{ server_php_version }}, which will also enable all necessary mpm modules"
       apache2_module:
-        ignore_configcheck: true
+        ignore_configcheck: "true"
         name: "php{{ server_php_version }}"
-        state: present
+        state: "present"
       when: os_type == "Ubuntu"
 
-    - name: give {{ apache_group }} ownership of {{ server_document_root }}
+    - name: "give {{ apache_group }} ownership of {{ server_document_root }}"
       file:
         path: "{{ server_document_root }}"
         owner: "{{ apache_group }}"
         group: "{{ apache_group }}"
         mode: "u=rwX,g=rwX,o=rX"
-        recurse: yes
+        recurse: "yes"
 
-    - name: give {{ apache_group }} ownership of {{ server_document_root }}/xdebug-remote.log and make it world writable
+    - name: "give {{ apache_group }} ownership of {{ server_document_root }}/xdebug-remote.log and make it world writable"
       file:
         path: "{{ server_document_root }}/xdebug-remote.log"
         owner: "{{ apache_group }}"
         group: "{{ apache_group }}"
-        mode: 0777
+        mode: "0777"
       when: server_php_version is search('[7].*')
 
-    - name: create an index.php for the default box
+    - name: "create an index.php for the default box"
       copy:
         content: |
           <?php
@@ -142,55 +142,55 @@
           ?>
         dest: "{{ server_document_root }}/index.php"
         group: "{{ apache_group }}"
-        mode: u+rw,g+rw,o+r
+        mode: "u+rw,g+rw,o+r"
         owner: "{{ apache_group }}"
 
-    - name: create server users and give them sudo access (by default, the password is the same as the username)
+    - name: "create server users and give them sudo access (by default, the password is the same as the username)"
       user:
         name: "{{ item }}"
-        append: yes
-        createhome: yes
+        append: "yes"
+        createhome: "yes"
         groups:
           - "{{ admin_group }}"
           - "{{ apache_group }}"
         password: "{{ item | password_hash('sha512') }}"
-        shell: /bin/bash
-        state: present
-        update_password: on_create
+        shell: "/bin/bash"
+        state: "present"
+        update_password: "on_create"
       with_items: "{{ server_users }}"
 
-    - name: add an ~/.ssh folder for each user
+    - name: "add an ~/.ssh folder for each user"
       file:
         dest: "/home/{{ item }}/.ssh"
-        state: directory
+        state: "directory"
       with_items: "{{ server_users }}"
 
-    - name: add a /etc/systemd/system/{{ php_webserver_daemon }}.service.d/ folder to set an apache umask override in
+    - name: "add a /etc/systemd/system/{{ php_webserver_daemon }}.service.d/ folder to set an apache umask override in"
       file:
         dest: "/etc/systemd/system/{{ php_webserver_daemon }}.service.d/"
-        state: directory
+        state: "directory"
 
-    - name: set an apache umask override
+    - name: "set an apache umask override"
       copy:
         dest: "/etc/systemd/system/{{ php_webserver_daemon }}.service.d/override.conf"
         content: |
           [Service]
           UMask=0002
 
-    - name: reload apache
+    - name: "reload apache"
       systemd:
-        daemon_reload: true
-        state: reloaded
+        daemon_reload: "true"
+        state: "reloaded"
         name: "{{ php_webserver_daemon }}"
 
-    - name: add the apache group to each user's group
+    - name: "add the apache group to each user's group"
       user:
         name: "{{ apache_group }}"
         groups: "{{ item }}"
-        append: yes
+        append: "yes"
       with_items: "{{ server_users }}"
 
-    - name: force the NFS lock manager to use consistent ports (58577/tcp 36389/udp) when building a local box
+    - name: "force the NFS lock manager to use consistent ports (58577/tcp 36389/udp) when building a local box"
       copy:
         src: "files/modprobe.d/lockd.conf"
         dest: "/etc/modprobe.d/lockd.conf"
@@ -199,14 +199,14 @@
         mode: "u=rw,g=r,o=r"
       when: packer_build_name == "local"
 
-    - name: on ubuntu, force mountd to use mountd port 33333/tcp when building a local box
+    - name: "on ubuntu, force mountd to use mountd port 33333/tcp when building a local box"
       lineinfile:
         path: "/etc/default/nfs-kernel-server"
         regexp: "^RPCMOUNTDOPTS="
         line: 'RPCMOUNTDOPTS="--port 33333"'
       when: (os_type == "Ubuntu") and (packer_build_name == "local")
 
-    - name: add the Vagrant insecure key to each user's ~/.ssh/authorized_keys file when building a local box
+    - name: "add the Vagrant insecure key to each user's ~/.ssh/authorized_keys file when building a local box"
       get_url:
         url: "https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub"
         dest: "/home/{{ item }}/.ssh/authorized_keys"
@@ -215,14 +215,14 @@
       with_items: "{{ server_users }}"
       when: packer_build_name == "local"
 
-    - name: enable passwordless sudo when building a local box
+    - name: "enable passwordless sudo when building a local box"
       copy:
         dest: "/etc/sudoers.d/99_{{ item }}"
         content: "{{ item }} ALL=(ALL) NOPASSWD:ALL"
       with_items: "{{ server_users }}"
       when: packer_build_name == "local"
 
-    - name: add dotfiles to each user's user directory
+    - name: "add dotfiles to each user's user directory"
       copy:
         src: "files/dotfiles/"
         dest: "/home/{{ item }}"
@@ -231,41 +231,41 @@
         mode: "u=rw,g=r,o=r"
       with_items: "{{ server_users }}"
 
-    - name: configure firewalld service rules
+    - name: "configure firewalld service rules"
       firewalld:
         service: "{{ item }}"
-        permanent: yes
-        state: enabled
+        permanent: "yes"
+        state: "enabled"
       with_items:
-        - ftp
-        - http
-        - https
-        - mysql
-        - nfs
-        - pop3
-        - pop3s
-        - smtp
-        - smtps
-        - ntp
-        - samba
-        - samba-client
-        - ssh
-        - telnet
+        - "ftp"
+        - "http"
+        - "https"
+        - "mysql"
+        - "nfs"
+        - "pop3"
+        - "pop3s"
+        - "smtp"
+        - "smtps"
+        - "ntp"
+        - "samba"
+        - "samba-client"
+        - "ssh"
+        - "telnet"
 
-    - name: configure additional firewalld service rules when building a local box
+    - name: "configure additional firewalld service rules when building a local box"
       firewalld:
         service: "{{ item }}"
-        permanent: yes
-        state: enabled
+        permanent: "yes"
+        state: "enabled"
       with_items:
-        - mountd # On some environments, this seems necessary, despite the static port we designated (33333) being open
+        - "mountd" # On some environments, this seems necessary, despite the static port we designated (33333) being open
       when: packer_build_name == "local"
 
-    - name: configure additional firewalld port rules when building a local box
+    - name: "configure additional firewalld port rules when building a local box"
       firewalld:
         port: "{{ item }}"
-        permanent: yes
-        state: enabled
+        permanent: "yes"
+        state: "enabled"
       with_items:
         - "111/tcp" # portmapper tcp port
         - "8000-9000/tcp" # alternative varnish and solr port range
@@ -274,8 +274,8 @@
         - "36389/udp" # NFS lock manager udp port
       when: packer_build_name == "local"
 
-    - name: enable and start firewalld service
+    - name: "enable and start firewalld service"
       service:
-        name: firewalld
-        state: started
-        enabled: yes
+        name: "firewalld"
+        state: "started"
+        enabled: "yes"

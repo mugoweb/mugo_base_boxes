@@ -5,25 +5,25 @@ ansible_python_interpreter: "/usr/bin/python3"
 apache_group: "www-data"
 apache_group_id: "33"
 apache_mods_enabled:
-  - expires.load
-  - headers.load
-  - rewrite.load
-  - ssl.load
+  - "expires.load"
+  - "headers.load"
+  - "rewrite.load"
+  - "ssl.load"
 
 # Build settings ######################################################################################################
 admin_group: "sudo"
 platform_specific_packages:
-  - aptitude
-  - dnsutils
-  - imagemagick
-  - linux-headers-generic
+  - "aptitude"
+  - "dnsutils"
+  - "imagemagick"
+  - "linux-headers-generic"
 os_type: "Ubuntu"
 
 # PHP settings ######################################################################################################
 php_packages_extra:
   - "libapache2-mod-php{{ server_php_version }}"
   - "php{{ server_php_version }}-intl" # should be installed by php role but isn't
-  - php-dev
-  - php-imagick
-  - php-apcu
+  - "php-dev"
+  - "php-imagick"
+  - "php-apcu"
 php_webserver_daemon: "apache2"

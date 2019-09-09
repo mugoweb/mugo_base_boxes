@@ -1,8 +1,8 @@
 # Apache settings ######################################################################################################
-apache_create_vhosts: true
+apache_create_vhosts: "true"
 apache_listen_ip: "*"
-apache_packages_state: latest
-apache_remove_default_vhost: true
+apache_packages_state: "latest"
+apache_remove_default_vhost: "true"
 apache_vhosts:
   - servername: "null"
     serveralias: "*"
@@ -21,14 +21,14 @@ apache_vhosts_ssl:
       RewriteRule ^(.*)$ http://www.%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
 # MySQL settings #######################################################################################################
-mysql_user_home: /root
-mysql_user_name: root
-mysql_user_password: root
-mysql_root_home: /root
-mysql_root_username: root
-mysql_root_password: root
-mysql_user_password_update: yes
-overwrite_global_mycnf: yes
+mysql_user_home: "/root"
+mysql_user_name: "root"
+mysql_user_password: "root"
+mysql_root_home: "/root"
+mysql_root_username: "root"
+mysql_root_password: "root"
+mysql_user_password_update: "yes"
+overwrite_global_mycnf: "yes"
 
 # NFS settings #########################################################################################################
 nfs_exports:
@@ -40,70 +40,70 @@ nfs_exports:
   - "{{ server_document_root }}    *(rw,sync,insecure,nohide,no_subtree_check,fsid=0,crossmnt,all_squash,anonuid={{ apache_group_id }},anongid={{ apache_group_id }})"
 
 # nginx settings #########################################################################################################
-nginx_remove_default_vhost: true
+nginx_remove_default_vhost: "true"
 
 # NodeJS settings ######################################################################################################
 npm_config_prefix: "/usr"
-nodejs_install_npm_user: root
+nodejs_install_npm_user: "root"
 nodejs_npm_global_packages:
-  - diff-so-fancy
-  - sass
-  - uglifycss
-  - uglify-js
+  - "diff-so-fancy"
+  - "sass"
+  - "uglifycss"
+  - "uglify-js"
 
 # PHP settings #########################################################################################################
 php_date_timezone: "{{ server_timezone }}"
 php_disable_functions:
-  - pcntl_alarm
-  - pcntl_fork
-  - pcntl_waitpid
-  - pcntl_wait
-  - pcntl_wifexited
-  - pcntl_wifstopped
-  - pcntl_wifsignaled
-  - pcntl_wexitstatus
-  - pcntl_wtermsig
-  - pcntl_wstopsig
-  - pcntl_signal_dispatch
-  - pcntl_get_last_error
-  - pcntl_strerror
-  - pcntl_sigprocmask
-  - pcntl_sigwaitinfo
-  - pcntl_sigtimedwait
-  - pcntl_exec
-  - pcntl_getpriority
-  - pcntl_setpriority
+  - "pcntl_alarm"
+  - "pcntl_fork"
+  - "pcntl_waitpid"
+  - "pcntl_wait"
+  - "pcntl_wifexited"
+  - "pcntl_wifstopped"
+  - "pcntl_wifsignaled"
+  - "pcntl_wexitstatus"
+  - "pcntl_wtermsig"
+  - "pcntl_wstopsig"
+  - "pcntl_signal_dispatch"
+  - "pcntl_get_last_error"
+  - "pcntl_strerror"
+  - "pcntl_sigprocmask"
+  - "pcntl_sigwaitinfo"
+  - "pcntl_sigtimedwait"
+  - "pcntl_exec"
+  - "pcntl_getpriority"
+  - "pcntl_setpriority"
 php_html_errors: "False"
-php_install_recommends: yes
-php_memcached_package: php-memcached
+php_install_recommends: "yes"
+php_memcached_package: "php-memcached"
 php_memory_limit: "512M"
-php_mysql_package: php-mysql
+php_mysql_package: "php-mysql"
 php_opcache_load_comments: "1"
 php_opcache_save_comments: "1"
 php_packages:
-  - php
-  - php-apcu
-  - php-cli
-  - php-common
-  - php-curl
-  - php-gd
-  - php-intl
-  - php-json
-  - php-mbstring
-  - php-opcache
-  - php-pear
-  - php-pspell
-  - php-soap
-  - php-readline
-  - php-xml
-  - php-xsl
+  - "php"
+  - "php-apcu"
+  - "php-cli"
+  - "php-common"
+  - "php-curl"
+  - "php-gd"
+  - "php-intl"
+  - "php-json"
+  - "php-mbstring"
+  - "php-opcache"
+  - "php-pear"
+  - "php-pspell"
+  - "php-soap"
+  - "php-readline"
+  - "php-xml"
+  - "php-xsl"
 php_post_max_size: "50M"
-php_session_gc_maxlifetime: 2592000
-php_session_gc_probability: 1
+php_session_gc_maxlifetime: "2592000"
+php_session_gc_probability: "1"
 php_upload_max_filesize: "50M"
 php_variables_order: "EGPCS"
 php_version: "{{ server_php_version }}"
-php_xdebug_idekey: xdebug.ide
+php_xdebug_idekey: "xdebug.ide"
 php_xdebug_remote_autostart: "true"
 php_xdebug_remote_connect_back: "true"
 php_xdebug_remote_enable: "true"
