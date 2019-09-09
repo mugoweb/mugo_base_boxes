@@ -249,6 +249,15 @@
         - ssh
         - telnet
 
+    - name: configure additional firewalld service rules when building a local box
+      firewalld:
+        service: "{{ item }}"
+        permanent: yes
+        state: enabled
+      with_items:
+        - mountd # On some environments, this seems necessary, despite the static port we designated (33333) being open
+      when: packer_build_name == "local"
+
     - name: configure additional firewalld port rules when building a local box
       firewalld:
         port: "{{ item }}"
