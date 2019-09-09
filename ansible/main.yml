@@ -68,7 +68,7 @@
         name: "{{ server_timezone }}"
 
   roles:
-    - role: geerlingguy.repo-remi
+    - role: geerlingguy.repo-epel
       when: os_type == "CentOS"
     - role: geerlingguy.repo-remi
       when: os_type == "CentOS"
