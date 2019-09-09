@@ -1,3 +1,6 @@
+# Run locally like:
+#   ansible-galaxy install -r requirements.yml
+#   ansible-playbook --connection=local --inventory 127.0.0.1, main.yml --extra-vars 'mysql_root_password=root packer_build_name=local'
 - hosts: all
   become: yes
   gather_facts: yes
