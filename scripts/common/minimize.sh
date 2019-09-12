@@ -1,6 +1,12 @@
 #!/bin/sh -eux
 # forked from https://github.com/chef/bento
 
+if [ "$(whoami)" != "root" ]
+then
+    sudo su -s "$0"
+    exit
+fi
+
 # Whiteout root
 count=$(df --sync -kP / | tail -n1  | awk -F ' ' '{print $4}')
 count=$(($count-1))

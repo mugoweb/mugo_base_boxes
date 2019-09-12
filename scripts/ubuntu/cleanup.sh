@@ -1,6 +1,12 @@
 #!/bin/bash -eux
 # forked from https://github.com/chef/bento
 
+if [ "$(whoami)" != "root" ]
+then
+    sudo su -s "$0"
+    exit
+fi
+
 # Delete all Linux headers
 dpkg --list \
   | awk '{ print $2 }' \

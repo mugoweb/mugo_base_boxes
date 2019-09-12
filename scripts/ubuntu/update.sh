@@ -1,6 +1,12 @@
 #!/bin/sh -eux
 # forked from https://github.com/chef/bento
 
+if [ "$(whoami)" != "root" ]
+then
+    sudo su -s "$0"
+    exit
+fi
+
 export DEBIAN_FRONTEND=noninteractive
 
 ubuntu_version="`lsb_release -r | awk '{print $2}'`";
