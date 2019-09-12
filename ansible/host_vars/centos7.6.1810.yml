@@ -9,6 +9,7 @@ platform_specific_packages:
   - "bash-completion-extras"
   - "bind-utils"
   - "deltarpm"
+  - "@Development tools"
   - "ImageMagick"
   - "ImageMagick-devel"
   - "kernel-devel"

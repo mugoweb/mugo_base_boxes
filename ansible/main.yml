@@ -132,7 +132,8 @@
         owner: "{{ apache_group }}"
         group: "{{ apache_group }}"
         mode: "0777"
-      when: server_php_version is search('[7].*')
+        state: "touch"
+      when: packer_build_name != "prod" and server_php_version != "5.6"
 
     - name: "create an index.php for the default box"
       copy:
