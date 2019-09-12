@@ -8,6 +8,10 @@
       "project_id": "mugo-web",
       "source_image_family": "ubuntu-1804-lts",
       "ssh_username": "root",
+      "tags": [
+        "http",
+        "https"
+      ],
       "type": "googlecompute",
       "zone": "us-west1-a"
     },
@@ -27,6 +31,7 @@
         ],
         "most_recent": "true"
       },
+      "security_group_id": "sg-c0ed43bf",
       "ssh_username": "ubuntu",
       "type": "amazon-ebs"
     },
@@ -105,10 +110,17 @@
   "post-processors": [
     {
       "type": "vagrant",
+      "only": [
+        "local"
+      ],
       "compression_level": "8",
       "output": "builds/{{user `image_name`}}-php{{user `server_php_version`}}-v{{user `version`}}.box"
-    },{
+    },
+    {
       "type": "shell-local",
+      "only": [
+        "local"
+      ],
       "environment_vars": [
         "image_name={{user `image_name`}}",
         "server_php_version={{user `server_php_version`}}",
@@ -146,7 +158,8 @@
         "scripts/common/virtualbox.sh"
       ],
       "type": "shell"
-    },{
+    },
+    {
       "type": "ansible-local",
       "playbook_dir": "ansible",
       "clean_staging_directory": "true",
@@ -156,7 +169,8 @@
         "--extra-vars",
         "'{\"vars_file_name\":\"{{user `image_name`}}.yml\",\"server_users\":{{user `server_users_local`}},\"server_php_version\":\"{{user `server_php_version`}}\",\"server_varnish_version\":\"{{user `server_varnish_version`}}\"}'"
       ]
-    },{
+    },
+    {
       "environment_vars": [
         "local_builder_username={{user `local_builder_username`}}"
       ],
