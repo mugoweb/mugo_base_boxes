@@ -31,7 +31,6 @@
         ],
         "most_recent": "true"
       },
-      "security_group_id": "sg-c0ed43bf",
       "ssh_username": "ubuntu",
       "type": "amazon-ebs"
     },
