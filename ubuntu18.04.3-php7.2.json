@@ -1,6 +1,36 @@
 {
   "builders": [
     {
+      "account_file": "secrets/google.json",
+      "image_description": "This box contains a PHP {{user `server_php_version`}} LAMP stack based on {{user `image_name`}}",
+      "image_name": "{{user `image_name`}}-php{{user `server_php_version`}}-v{{user `version`}}",
+      "name": "stage",
+      "project_id": "mugo-web",
+      "source_image_family": "ubuntu-1804-lts",
+      "ssh_username": "root",
+      "type": "googlecompute",
+      "zone": "us-west1-a"
+    },
+    {
+      "ami_name": "{{user `image_name`}}-php{{user `server_php_version`}}-v{{user `version`}}",
+      "name": "prod",
+      "instance_type": "t2.micro",
+      "region": "us-west-1",
+      "source_ami_filter": {
+        "filters": {
+          "virtualization-type": "hvm",
+          "name": "ubuntu/images/*ubuntu-bionic-18.04-amd64-server-*",
+          "root-device-type": "ebs"
+        },
+        "owners": [
+          "099720109477"
+        ],
+        "most_recent": true
+      },
+      "ssh_username": "ubuntu",
+      "type": "amazon-ebs"
+    },
+    {
       "name": "local",
       "boot_command": [
         "<esc><wait>",
@@ -88,6 +118,18 @@
     }
   ],
   "provisioners": [
+    {
+      "expect_disconnect": true,
+      "only": [
+        "stage",
+        "prod"
+      ],
+      "scripts": [
+        "scripts/ubuntu/update.sh",
+        "scripts/ubuntu/ansible.sh"
+      ],
+      "type": "shell"
+    },
     {
       "environment_vars": [
         "local_builder_username={{user `local_builder_username`}}"
