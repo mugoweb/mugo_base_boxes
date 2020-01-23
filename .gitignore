@@ -1,8 +1,6 @@
-builds/*
-!builds/.gitkeep
-iso/*
-!iso/.gitkeep
+**/builds/**
+!**/builds/.gitkeep
+**/iso/**
+!**/iso/.gitkeep
 packer_cache
-secrets/*
-!secrets/.gitkeep
 .idea/

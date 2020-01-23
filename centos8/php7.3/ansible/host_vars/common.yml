@@ -1,0 +1,160 @@
+# Packer settings ######################################################################################################
+# These variables are included here so the playbook can be invoked directly (without packer). When the playbook is
+# invoked via packer, these values are overwritten because packer supplies them as command line arguments, which are
+# prioritized.
+packer_build_name: "local"
+
+# Apache settings ######################################################################################################
+apache_create_vhosts: "true"
+apache_enablerepo: "epel"
+apache_group: "apache"
+apache_group_id: "48"
+apache_listen_ip: "*"
+apache_packages_state: "latest"
+apache_remove_default_vhost: "true"
+apache_vhosts:
+  - servername: "null"
+    serveralias: "*"
+    documentroot: "{{ server_document_root }}"
+    extra_parameters: |
+      RewriteCond %{HTTP_HOST} !^www\. [NC]
+      RewriteRule ^(.*)$ http://www.%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+apache_vhosts_ssl:
+  - servername: "null"
+    serveralias: "*"
+    documentroot: "{{ server_document_root }}"
+    certificate_file: "/etc/ssl/dev.crt"
+    certificate_key_file: "/etc/ssl/dev.pem"
+    extra_parameters: |
+      RewriteCond %{HTTP_HOST} !^www\. [NC]
+      RewriteRule ^(.*)$ http://www.%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# MySQL settings #######################################################################################################
+mysql_user_home: "/root"
+mysql_user_name: "root"
+mysql_user_password: "root"
+mysql_root_home: "/root"
+mysql_root_username: "root"
+mysql_root_password: "root"
+mysql_user_password_update: "yes"
+overwrite_global_mycnf: "yes"
+# Temporary MySQL variable overrides (from https://github.com/geerlingguy/ansible-role-mysql/pull/368/commits) ##
+# can be removed when the geerlingguy role is updated to support CentOS 8
+mysql_daemon: mariadb
+mysql_packages:
+  - mariadb
+  - mariadb-server
+  - mariadb-connector-c
+  - python2-PyMySQL
+  - python3-PyMySQL
+  - perl-DBD-MySQL
+mysql_slow_query_log_file: /var/log/mysql-slow.log
+mysql_log_error: /var/log/mariadb/mariadb.log
+mysql_syslog_tag: mariadb
+mysql_pid_file: /var/run/mariadb/mariadb.pid
+mysql_config_file: /etc/my.cnf
+mysql_config_include_dir: /etc/my.cnf.d
+mysql_socket: /var/lib/mysql/mysql.sock
+mysql_supports_innodb_large_prefix: false
+# end Temporary MySQL variable overrides ##
+
+# NFS settings #########################################################################################################
+nfs_exports:
+  - "# *               - anyone on the network can access this share"
+  - "# all_squash      - all network access to the shared folder will be considered as having come from anonguid and anongid"
+  - "# anonuid         - set to {{ apache_group_id }} the {{ apache_group }} user"
+  - "# anongid         - set to {{ apache_group_id }} the {{ apache_group }} group"
+  - "# no_root_squash"
+  - "{{ server_document_root }}    *(rw,sync,insecure,nohide,no_subtree_check,fsid=0,crossmnt,all_squash,anonuid={{ apache_group_id }},anongid={{ apache_group_id }})"
+
+# nginx settings #########################################################################################################
+nginx_remove_default_vhost: "true"
+
+# NodeJS settings ######################################################################################################
+npm_config_prefix: "/usr"
+nodejs_install_npm_user: "root"
+nodejs_npm_global_packages:
+  - "diff-so-fancy"
+  - "sass"
+  - "uglifycss"
+  - "uglify-js"
+
+# PHP settings #########################################################################################################
+php_date_timezone: "{{ server_timezone }}"
+php_disable_functions:
+  - "pcntl_alarm"
+  - "pcntl_fork"
+  - "pcntl_waitpid"
+  - "pcntl_wait"
+  - "pcntl_wifexited"
+  - "pcntl_wifstopped"
+  - "pcntl_wifsignaled"
+  - "pcntl_wexitstatus"
+  - "pcntl_wtermsig"
+  - "pcntl_wstopsig"
+  - "pcntl_signal_dispatch"
+  - "pcntl_get_last_error"
+  - "pcntl_strerror"
+  - "pcntl_sigprocmask"
+  - "pcntl_sigwaitinfo"
+  - "pcntl_sigtimedwait"
+  - "pcntl_exec"
+  - "pcntl_getpriority"
+  - "pcntl_setpriority"
+php_enablerepo: "epel"
+php_enable_php_fpm: "false"
+php_html_errors: "false"
+php_memcached_package: "php-memcached"
+php_memory_limit: "512M"
+php_mysql_package: "php-mysql"
+php_opcache_load_comments: "1"
+php_opcache_save_comments: "1"
+php_packages:
+  - "php"
+  - "php-apcu"
+  - "php-cli"
+  - "php-common"
+  - "php-curl"
+  - "php-devel"
+  - "php-gd"
+  - "php-intl"
+  - "php-json"
+  - "php-mbstring"
+  - "php-opcache"
+  - "php-pear"
+  - "php-pecl-apcu"
+  - "php-pecl-igbinary"
+  - "php-pecl-imagick"
+  - "php-pecl-msgpack"
+  - "php-pspell"
+  - "php-soap"
+  - "php-readline"
+  - "php-xml"
+  - "php-xsl"
+php_post_max_size: "50M"
+php_session_gc_maxlifetime: "2592000"
+php_session_gc_probability: "1"
+php_upload_max_filesize: "50M"
+php_variables_order: "EGPCS"
+php_version: "7.3"
+php_webserver_daemon: "httpd"
+php_xdebug_idekey: "xdebug.ide"
+php_xdebug_remote_autostart: "true"
+php_xdebug_remote_connect_back: "true"
+php_xdebug_remote_enable: "true"
+php_xdebug_remote_log: "/var/log/xdebug-remote.log"
+php_xdebug_remote_port: "9000"
+
+# Server settings ######################################################################################################
+server_document_root: "/var/www/html"
+server_env: "{{ packer_build_name }}"
+server_timezone: "America/Vancouver"
+server_users:
+  - "vagrant"
+  - "ezpub"
+
+# Varnish settings #####################################################################################################
+varnish_default_backend_host: "127.0.0.1"
+varnish_default_backend_port: "80"
+varnish_listen_port: "8080"
+varnish_version: "60lts"

@@ -1,0 +1,450 @@
+# Run locally like:
+#   ansible-playbook --connection=local --inventory 127.0.0.1, main.yml
+
+########################################################################################################################
+# Prepare the server by adding any files and configuration that are expected by later steps ############################
+########################################################################################################################
+- name: "preparing the server"
+  hosts: "all"
+  become: "yes"
+  tags:
+    - "prepare_server"
+  vars_files:
+    - "host_vars/common.yml"
+  tasks:
+    - name: "set the server timezone to {{ server_timezone }}"
+      timezone:
+        name: "{{ server_timezone }}"
+    - name: "generate an OpenSSL private key"
+      openssl_privatekey:
+        path: "/etc/ssl/dev.pem"
+    - name: "generate an OpenSSL Certificate Signing Request"
+      openssl_csr:
+        path: "/etc/ssl/dev.csr"
+        privatekey_path: "/etc/ssl/dev.pem"
+        country_name: "CA"
+        organization_name: "Mugo Web"
+        email_address: "dev@mugo.ca"
+        key_usage: "digitalSignature"
+        extended_key_usage: "serverAuth"
+        common_name: "*.local"
+        subject_alt_name: "{{ item.value | map('regex_replace', '^', 'DNS:') | list }}"
+      with_dict:
+        dns_server:
+          - "*.*.local"
+    - name: "sign the CSR file as a CA to turn it into a certificate"
+      openssl_certificate:
+        path: "/etc/ssl/dev.crt"
+        privatekey_path: "/etc/ssl/dev.pem"
+        csr_path: "/etc/ssl/dev.csr"
+        provider: "selfsigned"
+        selfsigned_not_after: "+730d" # this is the maximum valid length
+    - name: "ensure that {{ server_document_root }} exists"
+      file:
+        path: "{{ server_document_root }}"
+        state: "directory"
+        recurse: "yes"
+    - name: "create server users and give them sudo access (by default, the password is the same as the username)"
+      user:
+        name: "{{ item }}"
+        append: "yes"
+        createhome: "yes"
+        groups:
+          - "wheel"
+        password: "{{ item | password_hash('sha512') }}"
+        shell: "/bin/bash"
+        state: "present"
+        update_password: "on_create"
+      with_items: "{{ server_users }}"
+    - name: "add an ~/.ssh folder for each user"
+      file:
+        dest: "/home/{{ item }}/.ssh"
+        state: "directory"
+        owner: "{{ item }}"
+        group: "{{ item }}"
+      with_items: "{{ server_users }}"
+    - name: "add the Vagrant insecure key to each user's ~/.ssh/authorized_keys file when building a local box"
+      get_url:
+        url: "https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub"
+        dest: "/home/{{ item }}/.ssh/authorized_keys"
+        group: "{{ item }}"
+        owner: "{{ item }}"
+      with_items: "{{ server_users }}"
+      when: server_env == "local"
+    - name: "enable passwordless sudo when building a local box"
+      copy:
+        dest: "/etc/sudoers.d/99_{{ item }}"
+        content: "{{ item }} ALL=(ALL) NOPASSWD:ALL"
+      with_items: "{{ server_users }}"
+      when: server_env == "local"
+    - name: "check if dotfiles were added to user directories"
+      stat:
+        path: "/home/{{ server_users[0] }}/.dotfiles"
+      register: "dotfiles"
+    - name: "add dotfiles to each user's user directory"
+      copy:
+        src: "files/dotfiles/"
+        dest: "/home/{{ item }}"
+        owner: "{{ item }}"
+        group: "{{ item }}"
+        mode: "u=rw,g=r,o=r"
+      with_items: "{{ server_users }}"
+      when: dotfiles.stat.exists == False
+########################################################################################################################
+
+########################################################################################################################
+# Install packages that don't require configuration ####################################################################
+########################################################################################################################
+- name: "installing packages"
+  hosts: "all"
+  become: "yes"
+  tags:
+    - "install_packages"
+  vars_files:
+    - "host_vars/common.yml"
+  roles:
+    - "geerlingguy.repo-epel"
+    - "geerlingguy.repo-remi"
+  tasks:
+  - name: "enable PowerTools repo" # this is a built-in repo that's disabled by default. it's required for epel repo dependencies
+    lineinfile:
+      path: "/etc/yum.repos.d/CentOS-PowerTools.repo"
+      regexp: "^enabled=0"
+      line: "enabled=1"
+      state: "present"
+      backrefs: "yes"
+  # See the default CentOS 8 package list at http://mirror.centos.org/centos/8/BaseOS/x86_64/os/Packages/
+  - name: "installing packages"
+    package:
+      name:
+        - "acl"
+        - "atop"
+        - "bind-utils"
+        - "byobu"
+        - "curl"
+        - "drpm"
+        - "@Development tools"
+        - "firewalld"
+        - "git"
+        - "golang"
+        - "htop"
+        - "ImageMagick"
+        - "ImageMagick-devel"
+        - "iotop"
+        - "policycoreutils-python-utils"
+        - "pv"
+        - "vim"
+        - "redis"
+        - "sendmail-cf"
+        - "subversion"
+        - "tree"
+        - "vim"
+        - "wget"
+      state: "present"
+########################################################################################################################
+
+########################################################################################################################
+# Install roles (packages that do require configuration) ###############################################################
+########################################################################################################################
+- name: "installing roles"
+  hosts: "all"
+  become: "yes"
+  tags:
+    - "install_roles"
+  vars_files:
+    - "host_vars/common.yml"
+  roles:
+    - "geerlingguy.php-versions"
+    - "geerlingguy.php"
+    - role: "geerlingguy.php-xdebug"
+      when: server_env != "prod"
+    - "geerlingguy.apache"
+    - "geerlingguy.nginx"
+    - "geerlingguy.varnish" # this role has been modified to support CentOS 8 (upstream is still working on this)
+    - "geerlingguy.mysql" # this role has been modified to support CentOS 8 (upstream is still working on this)
+    - "geerlingguy.php-mysql"
+    - "geerlingguy.memcached"
+    - "geerlingguy.php-memcached"
+    - "geerlingguy.java"
+    - "geerlingguy.composer"
+    - "geerlingguy.nodejs"
+    - role: "geerlingguy.nfs" # this role has been modified to support CentOS 8 (upstream is still working on this)
+      when: server_env == "local"
+  post_tasks:
+    - name: "enable mod_mpm_prefork" # by default, apache uses mod_mpm_event but we need mod_mpm_prefork
+      lineinfile:
+        path: "/etc/httpd/conf.modules.d/00-mpm.conf"
+        regexp: "^LoadModule mpm_event_module modules/mod_mpm_event.so"
+        line: "LoadModule mpm_prefork_module modules/mod_mpm_prefork.so"
+        state: "present"
+        backrefs: "yes"
+    # Varnish VMODS (in post tasks, because we want role handler access) #######################################################################################################
+    - name: "install varnish devel"
+      dnf:
+        name: "varnish-devel"
+        state: "present"
+      notify: "restart varnish"
+    - name: "install packages to compile Varnish VMODs"
+      dnf:
+        name: [ 'autoconf', 'automake', 'libtool', 'pkgconfig', 'python3-docutils', 'python3-sphinx', 'jemalloc-devel' ]
+        state: "present"
+    - name: "Checking if need to build the VMODs"
+      command: "ls /usr/lib64/varnish/vmods/libvmod_xkey.so"
+      ignore_errors: "yes"
+      register: "result"
+    - name: "registering variable to know if it is necessary to build the Varnish VMods"
+      set_fact:
+        varnish_build_vmods: "{{ result.failed }}"
+      when: result is defined
+    - name: "get the VMODs repo"
+      git:
+        repo: "https://github.com/varnish/varnish-modules.git"
+        dest: "/tmp/vmods"
+        version: "6.0-lts"
+      when: "varnish_build_vmods"
+    - name: "bootstrap the source"
+      command: "./bootstrap"
+      args:
+        chdir: "/tmp/vmods"
+      when: "varnish_build_vmods"
+    - name: "configure the source"
+      command: "./configure"
+      args:
+        chdir: "/tmp/vmods"
+      when: "varnish_build_vmods"
+    - name: "build the Varnish VMODs"
+      make:
+        chdir: "/tmp/vmods"
+      when: "varnish_build_vmods"
+    - name: "build the Varnish VMODs"
+      make:
+        chdir: "/tmp/vmods"
+        target: "install"
+      when: "varnish_build_vmods"
+      notify: "restart varnish"
+    - name: "removing /tmp/vmods"
+      file:
+        path: "/tmp/vmods"
+        state: "absent"
+      when: "varnish_build_vmods"
+########################################################################################################################
+
+########################################################################################################################
+# Configure apache #####################################################################################################
+########################################################################################################################
+- name: "configuring apache"
+  hosts: "all"
+  become: "yes"
+  tags:
+    - "configure_apache"
+  vars_files:
+    - "host_vars/common.yml"
+  tasks:
+    - name: "server users to apache group"
+      user:
+        name: '{{ item }}'
+        groups:
+          - "{{ apache_group }}"
+        append: "yes"
+      with_items: "{{ server_users }}"
+    - name: "give {{ apache_group }} ownership of {{ php_xdebug_remote_log }} and make it world writable"
+      file:
+        path: "{{ php_xdebug_remote_log }}"
+        owner: "{{ apache_group }}"
+        group: "{{ apache_group }}"
+        mode: "0777"
+        state: "touch"
+      when: server_env != "prod"
+    - name: "give {{ apache_group }} ownership of {{ server_document_root }}"
+      file:
+        path: "{{ server_document_root }}"
+        owner: "{{ apache_group }}"
+        group: "{{ apache_group }}"
+        mode: "u=rwX,g=rwX,o=rX"
+        recurse: "yes"
+    - name: "add a /etc/systemd/system/{{ php_webserver_daemon }}.service.d/ folder to set an apache umask override in"
+      file:
+        dest: "/etc/systemd/system/{{ php_webserver_daemon }}.service.d/"
+        state: "directory"
+    - name: "set an apache umask override"
+      copy:
+        dest: "/etc/systemd/system/{{ php_webserver_daemon }}.service.d/override.conf"
+        content: |
+          [Service]
+          UMask=0002
+    - name: "update ssl.conf"
+      template:
+        src: "templates/httpd/conf.d/ssl.conf.j2"
+        dest: "/etc/httpd/conf.d/ssl.conf"
+        mode: "0644"
+    - name: "add the apache group to each user's group"
+      user:
+        name: "{{ apache_group }}"
+        groups: "{{ item }}"
+        append: "yes"
+      with_items: "{{ server_users }}"
+    - name: "create an index.php for the default box"
+      copy:
+        content: |
+          <?php
+          phpinfo();
+          ?>
+        dest: "{{ server_document_root }}/index.php"
+        group: "{{ apache_group }}"
+        mode: "u+rw,g+rw,o+r"
+        owner: "{{ apache_group }}"
+    - name: "Add logrotate entry for httpd"
+      template:
+        src: "templates/logrotate.d/httpd.j2"
+        dest: "/etc/logrotate.d/httpd"
+        mode: "0644"
+    - name: "reload apache"
+      systemd:
+        daemon_reload: "true"
+        state: "reloaded"
+        name: "{{ php_webserver_daemon }}"
+########################################################################################################################
+
+########################################################################################################################
+# Configure firewalld ##################################################################################################
+########################################################################################################################
+- name: "configuring firewalld"
+  hosts: "all"
+  become: "yes"
+  tags:
+    - "configure_firewalld"
+  vars_files:
+    - "host_vars/common.yml"
+  tasks:
+    - name: "force the NFS lock manager to use consistent ports (58577/tcp 36389/udp) when building a local box"
+      copy:
+        src: "files/modprobe.d/lockd.conf"
+        dest: "/etc/modprobe.d/lockd.conf"
+        owner: "root"
+        group: "root"
+        mode: "u=rw,g=r,o=r"
+      when: server_env == "local"
+    - name: "enable and start firewalld service"
+      service:
+        name: "firewalld"
+        state: "started"
+        enabled: "yes"
+    - name: "configure firewalld service rules"
+      firewalld:
+        service: "{{ item }}"
+        permanent: "yes"
+        state: "enabled"
+      with_items:
+        - "ftp"
+        - "http"
+        - "https"
+        - "mysql"
+        - "nfs"
+        - "pop3"
+        - "pop3s"
+        - "smtp"
+        - "smtps"
+        - "mountd"
+        - "ntp"
+        - "samba"
+        - "samba-client"
+        - "ssh"
+        - "telnet"
+    - name: "configure additional firewalld port rules when building a local box"
+      firewalld:
+        port: "{{ item }}"
+        permanent: "yes"
+        state: "enabled"
+      with_items:
+        - "111/tcp" # portmapper tcp port
+        - "8000-9000/tcp" # alternative varnish and solr port range
+        - "58577/tcp" # NFS lock manager tcp port
+        - "33333/tcp" # mountd tcp port
+        - "36389/udp" # NFS lock manager udp port
+      when: server_env == "local"
+########################################################################################################################
+
+########################################################################################################################
+# Configure SELinux ####################################################################################################
+########################################################################################################################
+- name: "configuring selinux"
+  hosts: "all"
+  become: "yes"
+  tags:
+    - "configure_selinux"
+  vars_files:
+    - "host_vars/common.yml"
+  tasks:
+    - name: "Set SELinux permissive"
+      selinux:
+        policy: "targeted"
+        state: "permissive"
+    - name: "Take Varnish out of SELinux"
+      selinux_permissive:
+        name: "varnishd_t"
+        permissive: "true"
+    - name: "Enable SELinux httpd network connections; persistent; (so eZ Publish can see Solr)"
+      seboolean:
+        name: "httpd_can_network_connect"
+        state: "yes"
+        persistent: "yes"
+    - name: "Enable SELinux httpd mail sending (for PHP & co.); persistent"
+      seboolean:
+        name: "httpd_can_sendmail"
+        state: "yes"
+        persistent: "yes"
+    - name: "Enable SELinux httpd network connections to memcache; persistent"
+      seboolean:
+        name: "httpd_can_network_memcache"
+        state: "yes"
+        persistent: "yes"
+    - name: "Enable SELinux httpd exec calls; persistent"
+      seboolean:
+        name: "httpd_execmem"
+        state: "yes"
+        persistent: "yes"
+    - name: "Set selinux policy for {{ server_document_root }}"
+      sefcontext:
+        target: '{{ item.target }}(/.*)?'
+        setype: "{{ item.setype }}"
+        reload: "yes"
+        state: "present"
+      register: "filecontext"
+      with_items:
+        - { target: "{{ server_document_root }}", setype: 'httpd_sys_rw_content_t' }
+    - name: "Apply new SELinux file context to filesystem"
+      command: "restorecon -irv {{ server_document_root }}"
+########################################################################################################################
+
+########################################################################################################################
+# Disable select items #################################################################################################
+########################################################################################################################
+- name: "disabling select items"
+  hosts: "all"
+  become: "yes"
+  tags:
+    - "disable_items"
+  vars_files:
+    - "host_vars/common.yml"
+  tasks:
+    - name: "remove php-fpm"
+      dnf:
+        name: "php-fpm"
+        state: "absent"
+    - name: "disable xdebug" # disabled for performance reasons but can easily be enabled by uncommenting in the config file
+      lineinfile:
+        path: "/etc/php.d/xdebug.ini"
+        regexp: "^zend_extension=\"/usr/lib64/php7.4/modules/xdebug-2.9.0.so\""
+        line: "# zend_extension=\"/usr/lib64/php7.4/modules/xdebug-2.9.0.so\""
+        state: "present"
+        backrefs: "yes"
+    - name: "ensure nginx is disabled and stopped"
+      service:
+        name: "nginx"
+        state: "stopped"
+        enabled: "no"
+    - name: "ensure varnish is disabled and stopped"
+      service:
+        name: "varnish"
+        state: "stopped"
+        enabled: "no"
